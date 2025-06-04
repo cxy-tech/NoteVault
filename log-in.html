@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NoteVault - Your Personal Notes Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; }
+    .gradient-bg { background: linear-gradient(to right, #6366f1, #8b5cf6); }
+  </style>
+</head>
+<body class="bg-gray-50">
+  <div id="app" class="min-h-screen flex flex-col">
+
+
+    <div id="login-screen" class="min-h-screen flex items-center justify-center">
+      <form id="login-form" class="bg-white p-8 rounded shadow-md w-full max-w-sm">
+        <h2 class="text-2xl font-bold mb-6 text-center text-indigo-600">NoteVault Login</h2>
+        <input type="email" id="email" placeholder="Email" required class="w-full p-2 border rounded mb-4" />
+        <input type="password" id="password" placeholder="Password" required class="w-full p-2 border rounded mb-4" />
+        <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition">Login</button>
+      </form>
+    </div>
+
+
+    <div id="main-app" class="hidden flex-grow flex flex-col">
+
+      <header class="bg-white shadow p-4 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-indigo-600">NoteVault</h1>
+        <div class="relative">
+          <button id="user-menu-button" class="text-indigo-600 font-medium">User</button>
+          <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-32 bg-white rounded shadow border">
+            <button id="sign-out-btn" class="block w-full text-left px-4 py-2 hover:bg-gray-100">Sign Out</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="p-4 flex justify-between items-center">
+        <input type="text" id="search" placeholder="Search notes..." class="border p-2 w-full max-w-xs rounded" />
+        <button id="new-note-btn" class="ml-4 bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">New Note</button>
+      </div>
+
+      <div id="notes-container" class="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+  </div>
+
+  <script>
+    const loginForm = document.getElementById("login-form");
+    const loginScreen = document.getElementById("login-screen");
+    const mainApp = document.getElementById("main-app");
+    const signOutBtn = document.getElementById("sign-out-btn");
+    const userMenuBtn = document.getElementById("user-menu-button");
+    const userDropdown = document.getElementById("user-dropdown");
+    const newNoteBtn = document.getElementById("new-note-btn");
+    const notesContainer = document.getElementById("notes-container");
+    const searchInput = document.getElementById("search");
+
+    let notes = JSON.parse(localStorage.getItem("notes")) || [];
+
+    function saveNotes() {
+      localStorage.setItem("notes", JSON.stringify(notes));
+    }
+
+    function renderNotes(filter = "") {
+      notesContainer.innerHTML = "";
+      const filtered = notes.filter(note => note.text.toLowerCase().includes(filter.toLowerCase()));
+      if (filtered.length === 0) {
+        notesContainer.innerHTML = "<p class='text-gray-500'>No notes found.</p>";
+      }
+      filtered.forEach((note, index) => {
+        const noteEl = document.createElement("div");
+        noteEl.className = "bg-white p-4 rounded shadow flex flex-col";
+        noteEl.innerHTML = `
+          <textarea class="flex-grow border-0 focus:outline-none resize-none mb-2" rows="4">${note.text}</textarea>
+          <div class="flex justify-between items-center mt-2">
+            <small class="text-gray-400">${note.date}</small>
+            <div>
+              <button class="edit-btn text-blue-500 mr-2">💾</button>
+              <button class="delete-btn text-red-500">🗑️</button>
+            </div>
+          </div>
+        `;
+        noteEl.querySelector(".delete-btn").addEventListener("click", () => {
+          notes.splice(index, 1);
+          saveNotes();
+          renderNotes(searchInput.value);
+        });
+        noteEl.querySelector(".edit-btn").addEventListener("click", () => {
+          const newText = noteEl.querySelector("textarea").value.trim();
+          if (newText) {
+            notes[index].text = newText;
+            saveNotes();
+            renderNotes(searchInput.value);
+          }
+        });
+        notesContainer.appendChild(noteEl);
+      });
+    }
+
+    loginForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      if (email && password) {
+        loginScreen.classList.add("hidden");
+        mainApp.classList.remove("hidden");
+        renderNotes();
+      } else {
+        alert("Please enter email and password.");
+      }
+    });
+
+    signOutBtn.addEventListener("click", () => {
+      mainApp.classList.add("hidden");
+      loginScreen.classList.remove("hidden");
+    });
+
+    userMenuBtn.addEventListener("click", () => {
+      userDropdown.classList.toggle("hidden");
+    });
+
+    newNoteBtn.addEventListener("click", () => {
+      const newNote = {
+        text: "",
+        date: new Date().toLocaleString()
+      };
+      notes.unshift(newNote);
+      saveNotes();
+      renderNotes(searchInput.value);
+    });
+
+    searchInput.addEventListener("input", () => {
+      renderNotes(searchInput.value);
+    });
+  </script>
+</body>
+</html>
